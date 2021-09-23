@@ -42,49 +42,53 @@ namespace Microsoft.SCIM.WebHostSample
         {
             void ConfigureMvcNewtonsoftJsonOptions(MvcNewtonsoftJsonOptions options) => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
 
-            void ConfigureAuthenticationOptions(AuthenticationOptions options)
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }
+            //void ConfigureAuthenticationOptions(AuthenticationOptions options)
+            //{
+            //    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            //    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            //}
 
-            void ConfigureJwtBearerOptons( JwtBearerOptions options)
-            {
-                if (this.environment.IsDevelopment())
-                {
-                    options.TokenValidationParameters =
-                       new TokenValidationParameters
-                       {
-                           ValidateIssuer = false,
-                           ValidateAudience = false,
-                           ValidateLifetime = false,
-                           ValidateIssuerSigningKey = false,
-                           ValidIssuer = this.configuration["Token:TokenIssuer"],
-                           ValidAudience = this.configuration["Token:TokenAudience"],
-                           IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this.configuration["Token:IssuerSigningKey"]))
-                       };
-                }
-                else
-                {
-                    options.Authority = this.configuration["Token:TokenIssuer"];
-                    options.Audience = this.configuration["Token:TokenAudience"];
-                    options.Events = new JwtBearerEvents
-                    {
-                        OnTokenValidated = context =>
-                        {
-                            return Task.CompletedTask;
-                        },
-                        OnAuthenticationFailed = AuthenticationFailed
-                    };
-                }
+            //void ConfigureJwtBearerOptons( JwtBearerOptions options)
+            //{
+            //    if (this.environment.IsDevelopment())
+            //    {
+            //        options.TokenValidationParameters =
+            //           new TokenValidationParameters
+            //           {
+            //               ValidateIssuer = false,
+            //               ValidateAudience = false,
+            //               ValidateLifetime = false,
+            //               ValidateIssuerSigningKey = false,
+            //               ValidIssuer = this.configuration["Token:TokenIssuer"],
+            //               ValidAudience = this.configuration["Token:TokenAudience"],
+            //               IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this.configuration["Token:IssuerSigningKey"]))
+            //           };
+            //    }
+            //    else
+            //    {
+            //        options.Authority = this.configuration["Token:TokenIssuer"];
+            //        options.Audience = this.configuration["Token:TokenAudience"];
+            //        options.Events = new JwtBearerEvents
+            //        {
+            //            OnTokenValidated = context =>
+            //            {
+            //                return Task.CompletedTask;
+            //            },
+            //            OnAuthenticationFailed = AuthenticationFailed
+            //        };
+            //    }
 
-            }
+            //}
 
-            services.AddAuthentication(ConfigureAuthenticationOptions).AddJwtBearer(ConfigureJwtBearerOptons);
+            //services.AddAuthentication(ConfigureAuthenticationOptions).AddJwtBearer(ConfigureJwtBearerOptons);
             services.AddControllers().AddNewtonsoftJson(ConfigureMvcNewtonsoftJsonOptions);
 
             services.AddSingleton(typeof(IProvider), this.ProviderBehavior);
             services.AddSingleton(typeof(IMonitor), this.MonitoringBehavior);
+
+            //
+            this.FeedSampleData();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -98,8 +102,8 @@ namespace Microsoft.SCIM.WebHostSample
             app.UseHsts();
             app.UseRouting();
             app.UseHttpsRedirection();
-            app.UseAuthentication();
-            app.UseAuthorization();
+            //app.UseAuthentication();
+            //app.UseAuthorization();
 
             app.UseEndpoints(
                 (IEndpointRouteBuilder endpoints) =>
@@ -120,6 +124,11 @@ namespace Microsoft.SCIM.WebHostSample
                 authenticationExceptionMessage.Length);
 
             return Task.FromException(arg.Exception);
+        }
+
+        private void FeedSampleData()
+        {
+
         }
     }
 }

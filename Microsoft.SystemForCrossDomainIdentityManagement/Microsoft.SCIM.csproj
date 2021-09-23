@@ -49,7 +49,7 @@
 
   <ItemGroup>
     <EmbeddedResource Update="SystemForCrossDomainIdentityManagementServiceResources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>SystemForCrossDomainIdentityManagementServiceResources.Designer.cs</LastGenOutput>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
