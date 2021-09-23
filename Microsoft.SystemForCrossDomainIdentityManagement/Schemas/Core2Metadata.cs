@@ -24,7 +24,19 @@ namespace Microsoft.SCIM
         }
         [DataMember(Name = AttributeNames.LastModified, Order = 2)]
         public DateTime LastModified
-    {
+        {
+            get;
+            set;
+        }
+        [DataMember(Name = AttributeNames.Version, Order = 3)]
+        public string Version
+        {
+            get;
+            set;
+        }
+        [DataMember(Name = AttributeNames.Location, Order = 4)]
+        public string Location
+        {
             get;
             set;
         }
