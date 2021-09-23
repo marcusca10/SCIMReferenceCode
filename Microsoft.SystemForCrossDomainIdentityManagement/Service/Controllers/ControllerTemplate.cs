@@ -242,7 +242,8 @@ namespace Microsoft.SCIM
                     monitor.Report(notification);
                 }
 
-                throw new HttpResponseException(HttpStatusCode.NotImplemented);
+                return BadRequest(new Core2Error(notSupportedException.Message, 501));
+                //throw new HttpResponseException(HttpStatusCode.NotImplemented);
             }
             catch (HttpResponseException responseException)
             {
