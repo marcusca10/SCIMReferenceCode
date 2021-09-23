@@ -44,6 +44,11 @@ namespace Microsoft.SCIM.WebHostSample.Provider
                 throw new HttpResponseException(HttpStatusCode.Conflict);
             }
 
+            // Update metadata
+            DateTime created = DateTime.UtcNow;
+            user.Metadata.Created = created;
+            user.Metadata.LastModified = created;
+
             string resourceIdentifier = Guid.NewGuid().ToString();
             resource.Identifier = resourceIdentifier;
             this.storage.Users.Add(resourceIdentifier, user);
