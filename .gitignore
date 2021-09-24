@@ -332,3 +332,4 @@ ASALocalRun/
 # log files
 Log/
 *.txt
+Microsoft.SCIM.WebHostSample/Properties/ServiceDependencies/HrSCIMWebHost - Web Deploy/profile.arm.json
