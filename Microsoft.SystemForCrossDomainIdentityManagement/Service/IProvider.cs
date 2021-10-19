@@ -23,7 +23,7 @@ namespace Microsoft.SCIM
         Task<Resource> CreateAsync(IRequest<Resource> request);
         Task DeleteAsync(IRequest<IResourceIdentifier> request);
         Task<QueryResponseBase> PaginateQueryAsync(IRequest<IQueryParameters> request);
-        Task<Resource[]> QueryAsync(IRequest<IQueryParameters> request);
+        Task<(Resource[], int)> QueryAsync(IRequest<IQueryParameters> request);
         Task<Resource> ReplaceAsync(IRequest<Resource> request);
         Task<Resource> RetrieveAsync(IRequest<IResourceRetrievalParameters> request);
         Task UpdateAsync(IRequest<IPatch> request);

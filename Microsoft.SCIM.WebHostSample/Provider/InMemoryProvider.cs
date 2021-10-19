@@ -4,6 +4,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.SCIM;
     using Microsoft.SCIM.WebHostSample.Resources;
@@ -72,7 +73,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             throw new  NotImplementedException();
         }
 
-        public override Task<Resource[]> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
+        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
         {
             if (parameters.SchemaIdentifier.Equals(SchemaIdentifiers.Core2EnterpriseUser))
             {

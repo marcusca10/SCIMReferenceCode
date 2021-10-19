@@ -69,7 +69,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             return Task.CompletedTask;
         }
 
-        public override Task<Resource[]> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
+        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
         {
             if (parameters == null)
             {
@@ -162,7 +162,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
                 .Select((Core2Group item) => item as Resource)
                 .ToArray();
 
-            return Task.FromResult(results);
+            return Task.FromResult((results, results.Length));
         }
 
         public override Task<Resource> ReplaceAsync(Resource resource, string correlationIdentifier)

@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -14,6 +16,13 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     [ApiController]
     public class SfEndpointPerson : ControllerBase
     {
+        private readonly ILogger _logger;
+
+        public SfEndpointPerson(ILogger<SfEndpointPerson> logger)
+        {
+            _logger = logger;
+        }
+
         [HttpGet]
         public async Task<ActionResult> Get(
             [FromQuery(Name = "$format")] string format = null,
@@ -21,6 +30,8 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
             [FromQuery(Name = "$expand")] string expand = null,
             [FromQuery(Name = "customPageSize")] int customPageSize = 0)
         {
+            _logger.LogInformation($"Received SF request: {Request.QueryString}");
+            _logger.LogInformation($"Authorization header: {Request.Headers["Authorization"]}");
 
             string scimFilter = string.Empty;
             string scimCount = string.Empty;
@@ -64,47 +75,49 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
             // Transform result to oData
             sfResponse odataResponse = new sfResponse()
             {
-                Data = new sfResults<sfPerson>() { Results = new List<sfPerson>() }
+                //Data = new sfResults<sfPerson>() { Results = new List<sfPerson>() }
+                Data = new sfResults<Core2EnterpriseUser>() { Results = scimResponse.Resources.ToList() }
             };
 
-            foreach (Core2EnterpriseUser user in scimResponse.Resources)
-            {
-                ElectronicMailAddress userMail = user.ElectronicMailAddresses.FirstOrDefault(item => item.Primary == true);
+            // Conversion from SCIM to SF oData
+            //foreach (Core2EnterpriseUser user in scimResponse.Resources)
+            //{
+            //    ElectronicMailAddress userMail = user.ElectronicMailAddresses.FirstOrDefault(item => item.Primary == true);
 
-                odataResponse.Data.Results.Add(
-                    new sfPerson()
-                    {
-                        PersonId = user.Identifier,
-                        PersonIdExternal = user.ExternalIdentifier,
-                        PersonUuid = user.Identifier,
-                        PersonEmpTerminationInfo = new SfPersonEmpTerminationInfo()
-                        {
-                            ActiveEmploymentsCount = user.Active ? 1 : 0,
-                            LatestTerminationDate = DateTime.UtcNow.AddYears(1)
-                        },
-                        Employment = new sfResults<SfEmployment>()
-                        {
-                            Results = new List<SfEmployment>()
-                            {
-                                new SfEmployment()
-                                {
-                                    StartDate = DateTime.UtcNow.AddMonths(-1)
-                                }
-                            }
-                        },
-                        PersonalInfo = new sfResults<SfPersonalInfo>()
-                        {
-                            Results = new List<SfPersonalInfo>()
-                            {
-                                new SfPersonalInfo()
-                                {
-                                    FirstName = user.Name.GivenName,
-                                    LastName = user.Name.FamilyName
-                                }
-                            }
-                        }
-                    });
-            }
+            //    odataResponse.Data.Results.Add(
+            //        new sfPerson()
+            //        {
+            //            PersonId = user.Identifier,
+            //            PersonIdExternal = user.ExternalIdentifier,
+            //            PersonUuid = user.Identifier,
+            //            PersonEmpTerminationInfo = new SfPersonEmpTerminationInfo()
+            //            {
+            //                ActiveEmploymentsCount = user.Active ? 1 : 0,
+            //                LatestTerminationDate = DateTime.UtcNow.AddYears(1)
+            //            },
+            //            Employment = new sfResults<SfEmployment>()
+            //            {
+            //                Results = new List<SfEmployment>()
+            //                {
+            //                    new SfEmployment()
+            //                    {
+            //                        StartDate = DateTime.UtcNow.AddMonths(-1)
+            //                    }
+            //                }
+            //            },
+            //            PersonalInfo = new sfResults<SfPersonalInfo>()
+            //            {
+            //                Results = new List<SfPersonalInfo>()
+            //                {
+            //                    new SfPersonalInfo()
+            //                    {
+            //                        FirstName = user.Name.GivenName,
+            //                        LastName = user.Name.FamilyName
+            //                    }
+            //                }
+            //            }
+            //        });
+            //}
 
 
             return Ok(odataResponse);
@@ -115,7 +128,8 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     public class sfResponse
     {
         [DataMember(Name = "d", Order = 0)]
-        public sfResults<sfPerson> Data
+        public sfResults<Core2EnterpriseUser> Data // Result in SCIM format
+        //public sfResults<sfPerson> Data
         {
             get;
             set;

@@ -160,12 +160,13 @@ namespace Microsoft.SCIM
                 throw new ArgumentNullException(nameof(request));
             }
 
-            IReadOnlyCollection<Resource> resources = await this.QueryAsync(request).ConfigureAwait(false);
-            QueryResponseBase result = new QueryResponse(resources);
-            result.TotalResults =
-                result.ItemsPerPage =
-                    resources.Count;
-            result.StartIndex = resources.Any() ? 1 : (int?)null;
+            (IReadOnlyCollection<Resource> Items, int Total) resources = await this.QueryAsync(request).ConfigureAwait(false);
+            QueryResponseBase result = new QueryResponse(resources.Items);
+            result.TotalResults = resources.Total;
+            result.ItemsPerPage = resources.Items.Count;
+            if (null != request.Payload.PaginationParameters)
+                if (request.Payload.PaginationParameters.StartIndex.HasValue)
+                    result.StartIndex = request.Payload.PaginationParameters.StartIndex > 0 ? request.Payload.PaginationParameters.StartIndex.Value : 1;
             return result;
         }
 
@@ -316,12 +317,12 @@ namespace Microsoft.SCIM
             return result;
         }
 
-        public virtual Task<Resource[]> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
+        public virtual Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
         {
             throw new NotImplementedException();
         }
 
-        public virtual async Task<Resource[]> QueryAsync(IRequest<IQueryParameters> request)
+        public virtual async Task<(Resource[], int)> QueryAsync(IRequest<IQueryParameters> request)
         {
             if (null == request)
             {
@@ -338,7 +339,7 @@ namespace Microsoft.SCIM
                 throw new ArgumentException(SystemForCrossDomainIdentityManagementServiceResources.ExceptionInvalidRequest);
             }
 
-            Resource[] result = await this.QueryAsync(request.Payload, request.CorrelationIdentifier).ConfigureAwait(false);
+            (Resource[], int) result = await this.QueryAsync(request.Payload, request.CorrelationIdentifier).ConfigureAwait(false);
             return result;
         }
 

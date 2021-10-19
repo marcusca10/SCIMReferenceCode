@@ -278,13 +278,13 @@ namespace Microsoft.SCIM
                 throw new ArgumentException(SystemForCrossDomainIdentityManagementServiceResources.ExceptionInvalidRequest);
             }
 
-            IReadOnlyCollection<Resource> resources = await this.QueryAsync(request).ConfigureAwait(false);
-            QueryResponseBase result = new QueryResponse(resources);
+            (IReadOnlyCollection<Resource> Items, int Total) resources = await this.QueryAsync(request).ConfigureAwait(false);
+            QueryResponseBase result = new QueryResponse(resources.Items);
             if (null == request.Payload.PaginationParameters)
             {
-                result.TotalResults =
+                result.TotalResults = 
                     result.ItemsPerPage =
-                        resources.Count;
+                        resources.Items.Count;
             }
 
             return result;
@@ -339,10 +339,10 @@ namespace Microsoft.SCIM
             }
         }
 
-        public override Task<Resource[]> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
+        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
         {
             Resource[] resources = this.Query(parameters);
-            Task<Resource[]> result = Task.FromResult(resources);
+            Task<(Resource[], int)> result = Task.FromResult((resources, resources.Length));
             return result;
         }
 

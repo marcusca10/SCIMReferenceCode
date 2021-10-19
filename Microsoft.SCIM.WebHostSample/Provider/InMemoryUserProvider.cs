@@ -9,7 +9,6 @@ namespace Microsoft.SCIM.WebHostSample.Provider
     using System.Threading.Tasks;
     using System.Web.Http;
     using Microsoft.SCIM;
-    using Microsoft.SCIM.WebHostSample.Resources;
 
     public class InMemoryUserProvider : ProviderBase
     {
@@ -73,7 +72,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             return Task.CompletedTask;
         }
 
-        public override Task<Resource[]> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
+        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
         {
             if (parameters == null)
             {
@@ -219,14 +218,15 @@ namespace Microsoft.SCIM.WebHostSample.Provider
                 }
             }
 
+            int total = results.Count();
             if (parameters.PaginationParameters != null)
             {
-                int skip = parameters.PaginationParameters.StartIndex.HasValue ? parameters.PaginationParameters.StartIndex.Value : 0;
+                int skip = parameters.PaginationParameters.StartIndex.HasValue ? parameters.PaginationParameters.StartIndex.Value - 1 : 0;
                 int count = parameters.PaginationParameters.Count.HasValue ? parameters.PaginationParameters.Count.Value : 0;
-                return Task.FromResult(results.Skip(skip).Take(count).ToArray());
+                return Task.FromResult((results.Skip(skip).Take(count).ToArray(), total));
             }
             else
-                return Task.FromResult(results.ToArray());
+                return Task.FromResult((results.ToArray(), total));
         }
 
         public override Task<Resource> ReplaceAsync(Resource resource, string correlationIdentifier)
@@ -259,6 +259,9 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             {
                 throw new HttpResponseException(HttpStatusCode.NotFound);
             }
+
+            // Update metadata
+            user.Metadata.LastModified = DateTime.UtcNow; 
 
             this.storage.Users[user.Identifier] = user;
             Resource result = user as Resource;
@@ -331,6 +334,9 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             if (this.storage.Users.TryGetValue(patch.ResourceIdentifier.Identifier, out Core2EnterpriseUser user))
             {
                 user.Apply(patchRequest);
+
+                // Update metadata
+                user.Metadata.LastModified = DateTime.UtcNow;
             }
             else
             {

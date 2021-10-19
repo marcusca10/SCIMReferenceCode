@@ -40,11 +40,12 @@ namespace Microsoft.SCIM
 
                 IReadOnlyCollection<Resource> resources = provider.Schema;
                 QueryResponseBase result = new QueryResponse(resources);
-                
-                result.TotalResults =
-                    result.ItemsPerPage =
-                        resources.Count;
-                result.StartIndex = 1;
+
+                //result.TotalResults = 
+                //    result.ItemsPerPage =
+                //        resources.Count;
+                //result.StartIndex = 1;
+                result.TotalResults = resources.Count;
                 return result;
                 
             }
