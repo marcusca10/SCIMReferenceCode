@@ -16,6 +16,7 @@ namespace Microsoft.SCIM.WebHostSample
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
     using Microsoft.IdentityModel.Tokens;
+    using Microsoft.SCIM.WebHostSample.Authentication;
     using Microsoft.SCIM.WebHostSample.Provider;
     using Newtonsoft.Json;
 
@@ -81,7 +82,11 @@ namespace Microsoft.SCIM.WebHostSample
             //}
 
             //services.AddAuthentication(ConfigureAuthenticationOptions).AddJwtBearer(ConfigureJwtBearerOptons);
+            services.AddAuthentication("BasicAuthentication").AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+
             services.AddControllers().AddNewtonsoftJson(ConfigureMvcNewtonsoftJsonOptions);
+
+            services.AddSingleton(typeof(IUserService), new PasswordUserService());
 
             services.AddSingleton(typeof(IProvider), this.ProviderBehavior);
             services.AddSingleton(typeof(IMonitor), this.MonitoringBehavior);
@@ -102,8 +107,8 @@ namespace Microsoft.SCIM.WebHostSample
             app.UseHsts();
             app.UseRouting();
             app.UseHttpsRedirection();
-            //app.UseAuthentication();
-            //app.UseAuthorization();
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(
                 (IEndpointRouteBuilder endpoints) =>

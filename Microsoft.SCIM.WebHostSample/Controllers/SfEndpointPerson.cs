@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -14,6 +14,7 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
 {
     [Route("odata/v2/PerPerson")]
     [ApiController]
+    [Authorize]
     public class SfEndpointPerson : ControllerBase
     {
         private readonly ILogger _logger;
@@ -32,6 +33,10 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
         {
             _logger.LogInformation($"Received SF request: {Request.QueryString}");
             _logger.LogInformation($"Authorization header: {Request.Headers["Authorization"]}");
+
+            // Get company name: @<companyID>
+            var company = User.Identity.Name.Split(new[] { '@' }, 2)[1];
+            _logger.LogWarning($"Company (from username): {company}");
 
             string scimFilter = string.Empty;
             string scimCount = string.Empty;
@@ -73,51 +78,98 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
             }
 
             // Transform result to oData
-            sfResponse odataResponse = new sfResponse()
+            SfResponse odataResponse = new SfResponse()
             {
-                //Data = new sfResults<sfPerson>() { Results = new List<sfPerson>() }
-                Data = new sfResults<Core2EnterpriseUser>() { Results = scimResponse.Resources.ToList() }
+                Data = new SfResults<sfPerson>() { Results = new List<sfPerson>() }
+                // Result in SCIM format
+                //Data = new sfResults<Core2EnterpriseUser>() { Results = scimResponse.Resources.ToList() }
             };
 
             // Conversion from SCIM to SF oData
-            //foreach (Core2EnterpriseUser user in scimResponse.Resources)
-            //{
-            //    ElectronicMailAddress userMail = user.ElectronicMailAddresses.FirstOrDefault(item => item.Primary == true);
+            foreach (Core2EnterpriseUser user in scimResponse.Resources)
+            {
+                //ElectronicMailAddress userMail = user.ElectronicMailAddresses != null ? user.ElectronicMailAddresses.FirstOrDefault(item => item.Primary == true) : null;
+                PhoneNumber userPhone = user.PhoneNumbers != null ? user.PhoneNumbers.FirstOrDefault(item => item.Primary == true) : null;
+                Address userAddress = user.Addresses != null ? user.Addresses.FirstOrDefault(item => item.Primary == true) : null;
 
-            //    odataResponse.Data.Results.Add(
-            //        new sfPerson()
-            //        {
-            //            PersonId = user.Identifier,
-            //            PersonIdExternal = user.ExternalIdentifier,
-            //            PersonUuid = user.Identifier,
-            //            PersonEmpTerminationInfo = new SfPersonEmpTerminationInfo()
-            //            {
-            //                ActiveEmploymentsCount = user.Active ? 1 : 0,
-            //                LatestTerminationDate = DateTime.UtcNow.AddYears(1)
-            //            },
-            //            Employment = new sfResults<SfEmployment>()
-            //            {
-            //                Results = new List<SfEmployment>()
-            //                {
-            //                    new SfEmployment()
-            //                    {
-            //                        StartDate = DateTime.UtcNow.AddMonths(-1)
-            //                    }
-            //                }
-            //            },
-            //            PersonalInfo = new sfResults<SfPersonalInfo>()
-            //            {
-            //                Results = new List<SfPersonalInfo>()
-            //                {
-            //                    new SfPersonalInfo()
-            //                    {
-            //                        FirstName = user.Name.GivenName,
-            //                        LastName = user.Name.FamilyName
-            //                    }
-            //                }
-            //            }
-            //        });
-            //}
+                odataResponse.Data.Results.Add(
+                    new sfPerson()
+                    {
+                        PersonId = user.Identifier,
+                        PersonIdExternal = user.ExternalIdentifier,
+                        PersonUuid = user.Identifier,
+                        PersonEmpTerminationInfo = new SfPersonEmpTerminationInfo()
+                        {
+                            ActiveEmploymentsCount = user.Active ? 1 : 0,
+                            LatestTerminationDate = DateTime.UtcNow.AddYears(1)
+                        },
+                        Employment = new SfResults<SfEmployment>()
+                        {
+                            Results = new List<SfEmployment>()
+                            {
+                                new SfEmployment()
+                                {
+                                    // startDate not available in SCIM user schema
+                                    StartDate = DateTime.UtcNow.AddMonths(-1),
+                                    JobInfo = new SfResults<SfJobInfo>()
+                                    {
+                                        Results = new List<SfJobInfo>()
+                                        {
+                                            new SfJobInfo()
+                                            {
+                                                Company = new SfCompany()
+                                                {
+                                                    NameLocalized = company.ToUpperInvariant()
+                                                },
+                                                Department = new SfDepartment()
+                                                {
+                                                    NameLocalized = user.EnterpriseExtension.Department
+                                                },
+                                                JobTitle = user.Title,
+                                                Location = new SfLocation()
+                                                {
+                                                    AddressNavDEFLT = new SfAddressNavDEFLT()
+                                                    {
+                                                        Address1 = userAddress != null ? userAddress.StreetAddress : null,
+                                                        City = userAddress != null ? userAddress.Locality : null,
+                                                        ZipCode = userAddress != null ? userAddress.PostalCode : null
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    User = new SfUser()
+                                    {
+                                        State = userAddress != null ? userAddress.Region : null,
+                                        Country = userAddress != null ? userAddress.Country : null
+                                    }
+                                }
+                            }
+                        },
+                        PersonalInfo = new SfResults<SfPersonalInfo>()
+                        {
+                            Results = new List<SfPersonalInfo>()
+                            {
+                                new SfPersonalInfo()
+                                {
+                                    FirstName = user.Name.GivenName,
+                                    LastName = user.Name.FamilyName
+                                }
+                            }
+                        },
+                        Phone = new SfResults<SfPhone>()
+                        {
+                            Results = new List<SfPhone>()
+                            {
+                                new SfPhone()
+                                {
+                                    IsPrimary = true,
+                                    PhoneNumber = userPhone != null ? userPhone.Value : null
+                                }
+                            }
+                        }
+                    });
+            }
 
 
             return Ok(odataResponse);
@@ -125,11 +177,12 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     }
 
     [DataContract]
-    public class sfResponse
+    public class SfResponse
     {
         [DataMember(Name = "d", Order = 0)]
-        public sfResults<Core2EnterpriseUser> Data // Result in SCIM format
-        //public sfResults<sfPerson> Data
+        // Result in SCIM format
+        //public sfResults<Core2EnterpriseUser> Data 
+        public SfResults<sfPerson> Data
         {
             get;
             set;
@@ -137,7 +190,7 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     }
 
     [DataContract]
-    public class sfResults<T>
+    public class SfResults<T>
     {
         [DataMember(Name = "results", Order = 0)]
         public List<T> Results
@@ -149,7 +202,7 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
 
     //[DataMember(Name = "__metadata", Order = 0)]
     [DataContract]
-    public class sfMetadata
+    public class SfMetadata
     {
         [DataMember(Name = "uri", Order = 0)]
         public string Uri
@@ -169,7 +222,7 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     public class sfPerson
     {
         [DataMember(Name = "__metadata", Order = 0)]
-        public sfMetadata Metadata
+        public SfMetadata Metadata
         {
             get;
             set;
@@ -201,13 +254,21 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
         }
 
         [DataMember(Name = "employmentNav", Order = 4)]
-        public sfResults<SfEmployment> Employment
+        public SfResults<SfEmployment> Employment
         {
             get;
             set;
         }
+
         [DataMember(Name = "personalInfoNav", Order = 5)]
-        public sfResults<SfPersonalInfo> PersonalInfo
+        public SfResults<SfPersonalInfo> PersonalInfo
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "phoneNav", Order = 6)]
+        public SfResults<SfPhone> Phone
         {
             get;
             set;
@@ -219,6 +280,20 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     {
         [DataMember(Name = "startDate", Order = 0)]
         public DateTime StartDate
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "jobInfoNav", Order = 1)]
+        public SfResults<SfJobInfo> JobInfo
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "userNav", Order = 2)]
+        public SfUser User
         {
             get;
             set;
@@ -258,4 +333,141 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
             set;
         }
     }
+
+    [DataContract]
+    public class SfCompany
+    {
+        [DataMember(Name = "name_localized", Order = 0)]
+        public string NameLocalized
+        {
+            get;
+            set;
+        }
+    }
+
+    [DataContract]
+    public class SfDepartment
+    {
+        [DataMember(Name = "name_localized", Order = 0)]
+        public string NameLocalized
+        {
+            get;
+            set;
+        }
+    }
+
+    [DataContract]
+    public class SfAddressNavDEFLT
+    {
+        [DataMember(Name = "address1", Order = 0)]
+        public string Address1
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "city", Order = 1)]
+        public string City
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "zipCode", Order = 2)]
+        public string ZipCode
+        {
+            get;
+            set;
+        }
+    }
+
+    //$.employmentNav.results[0].jobInfoNav.results[0].locationNav.addressNavDEFLT.address1
+    //$.employmentNav.results[0].jobInfoNav.results[0].locationNav.addressNavDEFLT.city
+    //$.employmentNav.results[0].jobInfoNav.results[0].locationNav.addressNavDEFLT.zipCode
+    [DataContract]
+    public class SfLocation
+    {
+        [DataMember(Name = "addressNavDEFLT", Order = 0)]
+        public SfAddressNavDEFLT AddressNavDEFLT
+        {
+            get;
+            set;
+        }
+    }
+
+
+
+    [DataContract]
+    public class SfJobInfo
+    {
+        [DataMember(Name = "companyNav", Order = 0)]
+        public SfCompany Company
+        {
+            get;
+            set;
+        }
+
+        //$.employmentNav.results[0].jobInfoNav.results[0].departmentNav.name_localized
+        [DataMember(Name = "departmentNav", Order = 1)]
+        public SfDepartment Department
+        {
+            get;
+            set;
+        }
+
+        //$.employmentNav.results[0].jobInfoNav.results[0].jobTitle
+        [DataMember(Name = "jobTitle", Order = 2)]
+        public string JobTitle
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "locationNav", Order = 3)]
+        public SfLocation Location
+        {
+            get;
+            set;
+        }
+    }
+
+    //$.employmentNav.results[0].userNav.state
+    //$.employmentNav.results[0].userNav.country
+    [DataContract]
+    public class SfUser
+    {
+        [DataMember(Name = "state", Order = 0)]
+        public string State
+        {
+            get;
+            set;
+        }
+        [DataMember(Name = "country", Order = 1)]
+        public string Country
+        {
+            get;
+            set;
+        }
+    }
+
+    //$.phoneNav.results[?(@.isPrimary == true)].phoneNumber
+    [DataContract]
+    public class SfPhone
+    {
+        [DataMember(Name = "isPrimary", Order = 0)]
+        public bool IsPrimary
+        {
+            get;
+            set;
+        }
+
+        [DataMember(Name = "phoneNumber", Order = 1)]
+        public string PhoneNumber
+        {
+            get;
+            set;
+        }
+    }
+
+
 }
