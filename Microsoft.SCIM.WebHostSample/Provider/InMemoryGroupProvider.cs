@@ -6,6 +6,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using System.Web.Http;
     using Microsoft.SCIM;
@@ -20,7 +21,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             this.storage = InMemoryStorage.Instance;
         }
 
-        public override Task<Resource> CreateAsync(Resource resource, string correlationIdentifier)
+        public override Task<Resource> CreateAsync(Resource resource, string tenant, string correlationIdentifier)
         {
             if (resource.Identifier != null)
             {
@@ -69,7 +70,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             return Task.CompletedTask;
         }
 
-        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
+        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters,  string tenant, string correlationIdentifier)
         {
             if (parameters == null)
             {
@@ -201,7 +202,7 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             return Task.FromResult(result);
         }
 
-        public override Task<Resource> RetrieveAsync(IResourceRetrievalParameters parameters, string correlationIdentifier)
+        public override Task<Resource> RetrieveAsync(IResourceRetrievalParameters parameters, string tenant, string correlationIdentifier)
         {
             if (parameters == null)
             {
@@ -273,6 +274,11 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             }
 
             return Task.CompletedTask;
+        }
+
+        public override string GetTenant(HttpRequestMessage request)
+        {
+            throw new NotImplementedException();
         }
     }
 }

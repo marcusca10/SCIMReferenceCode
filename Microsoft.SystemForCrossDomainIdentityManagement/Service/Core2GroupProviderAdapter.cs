@@ -2,7 +2,7 @@
 
 namespace Microsoft.SCIM
 {
-    internal class Core2GroupProviderAdapter : ProviderAdapterTemplate<Core2Group>
+    public class Core2GroupProviderAdapter : ProviderAdapterTemplate<Core2Group>
     {
         public Core2GroupProviderAdapter(IProvider provider)
             : base(provider)

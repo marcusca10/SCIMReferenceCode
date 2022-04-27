@@ -72,7 +72,7 @@ namespace Microsoft.SCIM
 
     public abstract class ControllerTemplate<T> : ControllerTemplate where T : Resource
     {
-        internal ControllerTemplate(IProvider provider, IMonitor monitor)
+        public ControllerTemplate(IProvider provider, IMonitor monitor)
             : base(provider, monitor)
         {
         }
@@ -89,6 +89,10 @@ namespace Microsoft.SCIM
         [HttpDelete(ControllerTemplate.AttributeValueIdentifier)]
         public virtual async Task<IActionResult> Delete(string identifier)
         {
+            // Log
+            LogRequestInfo(Request.Path.ToString());
+
+
             string correlationIdentifier = null;
             try
             {
@@ -179,6 +183,9 @@ namespace Microsoft.SCIM
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "Get", Justification = "The names of the methods of a controller must correspond to the names of hypertext markup verbs")]
         public virtual async Task<ActionResult<QueryResponseBase>> Get()
         {
+            // Log
+            LogRequestInfo(Request.Path.ToString());
+
             string correlationIdentifier = null;
             try
             {
@@ -282,6 +289,10 @@ namespace Microsoft.SCIM
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "Get", Justification = "The names of the methods of a controller must correspond to the names of hypertext markup verbs")]
         public virtual async Task<IActionResult> Get([FromUri]string identifier)
         {
+            // Log
+            LogRequestInfo(Request.Path.ToString());
+
+
             string correlationIdentifier = null;
             try
             {
@@ -438,6 +449,10 @@ namespace Microsoft.SCIM
         [HttpPatch(ControllerTemplate.AttributeValueIdentifier)]
         public virtual async Task<IActionResult> Patch(string identifier, [FromBody]PatchRequest2 patchRequest)
         {
+            // Log
+            LogRequestInfo(Request.Path.ToString());
+
+
             string correlationIdentifier = null;
 
             try
@@ -554,6 +569,10 @@ namespace Microsoft.SCIM
         [HttpPost]
         public virtual async Task<ActionResult<Resource>> Post([FromBody]T resource)
         {
+            // Log
+            LogRequestInfo(Request.Path.ToString());
+
+
             string correlationIdentifier = null;
 
             try
@@ -652,6 +671,10 @@ namespace Microsoft.SCIM
         [HttpPut(ControllerTemplate.AttributeValueIdentifier)]
         public virtual async Task<ActionResult<Resource>> Put([FromBody]T resource, string identifier)
         {
+            // Log
+            LogRequestInfo(Request.Path.ToString());
+
+
             string correlationIdentifier = null;
 
             try
@@ -733,6 +756,16 @@ namespace Microsoft.SCIM
 
                 throw;
             }
+        }
+
+        void LogRequestInfo(string path)
+        {
+            Notification<string> requestNotification = WarningNotificationFactory.Instance.FormatNotification(
+                SystemForCrossDomainIdentityManagementServiceResources.InformationRequestReceivedTemplate,
+                null,
+                ServiceNotificationIdentifiers.MonitoringMiddlewareReception,
+                Request.Method + ": " + Request.Path.ToString());
+            this.monitor.Warn(requestNotification);
         }
     }
 }

@@ -4,6 +4,7 @@
 
 namespace Microsoft.SCIM.WebHostSample
 {
+    using System.Configuration;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Authentication;
@@ -34,6 +35,8 @@ namespace Microsoft.SCIM.WebHostSample
             this.configuration = configuration;
 
             this.MonitoringBehavior = new ConsoleMonitor();
+            //this.ProviderBehavior = new GatewayProvider();
+            //this.ProviderBehavior = new CosmosProvider();
             this.ProviderBehavior = new InMemoryProvider();
         }
 
@@ -43,46 +46,49 @@ namespace Microsoft.SCIM.WebHostSample
         {
             void ConfigureMvcNewtonsoftJsonOptions(MvcNewtonsoftJsonOptions options) => options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
 
-            //void ConfigureAuthenticationOptions(AuthenticationOptions options)
-            //{
-            //    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            //    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            //}
+            void ConfigureAuthenticationOptions(AuthenticationOptions options)
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }
 
-            //void ConfigureJwtBearerOptons( JwtBearerOptions options)
-            //{
-            //    if (this.environment.IsDevelopment())
-            //    {
-            //        options.TokenValidationParameters =
-            //           new TokenValidationParameters
-            //           {
-            //               ValidateIssuer = false,
-            //               ValidateAudience = false,
-            //               ValidateLifetime = false,
-            //               ValidateIssuerSigningKey = false,
-            //               ValidIssuer = this.configuration["Token:TokenIssuer"],
-            //               ValidAudience = this.configuration["Token:TokenAudience"],
-            //               IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this.configuration["Token:IssuerSigningKey"]))
-            //           };
-            //    }
-            //    else
-            //    {
-            //        options.Authority = this.configuration["Token:TokenIssuer"];
-            //        options.Audience = this.configuration["Token:TokenAudience"];
-            //        options.Events = new JwtBearerEvents
-            //        {
-            //            OnTokenValidated = context =>
-            //            {
-            //                return Task.CompletedTask;
-            //            },
-            //            OnAuthenticationFailed = AuthenticationFailed
-            //        };
-            //    }
+            void ConfigureJwtBearerOptons(JwtBearerOptions options)
+            {
+                if (this.environment.IsDevelopment())
+                {
+                    options.TokenValidationParameters =
+                       new TokenValidationParameters
+                       {
+                           ValidateIssuer = false,
+                           ValidateAudience = false,
+                           ValidateLifetime = false,
+                           ValidateIssuerSigningKey = false,
+                           ValidIssuer = this.configuration["Token:TokenIssuer"],
+                           ValidAudience = this.configuration["Token:TokenAudience"],
+                           IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(this.configuration["Token:IssuerSigningKey"]))
+                       };
+                }
+                else
+                {
+                    options.Authority = this.configuration["Token:TokenIssuer"];
+                    options.Audience = this.configuration["Token:TokenAudience"];
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = context =>
+                        {
+                            return Task.CompletedTask;
+                        },
+                        OnAuthenticationFailed = AuthenticationFailed
+                    };
+                }
 
-            //}
+            }
 
             //services.AddAuthentication(ConfigureAuthenticationOptions).AddJwtBearer(ConfigureJwtBearerOptons);
-            services.AddAuthentication("BasicAuthentication").AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+            //services.AddAuthentication("BasicAuthentication").AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+            services.AddAuthentication(ConfigureAuthenticationOptions)
+                .AddJwtBearer(ConfigureJwtBearerOptons)
+                .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
             services.AddControllers().AddNewtonsoftJson(ConfigureMvcNewtonsoftJsonOptions);
 

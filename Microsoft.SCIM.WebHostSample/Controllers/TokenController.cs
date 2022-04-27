@@ -7,6 +7,7 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     using System;
     using System.IdentityModel.Tokens.Jwt;
     using System.Text;
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Configuration;
     using Microsoft.IdentityModel.Tokens;
@@ -14,6 +15,7 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
     // Controller for generating a bearer token for authorization during testing.
     // This is not meant to replace proper Oauth for authentication purposes.
     [Route("scim/token")]
+    [Authorize(AuthenticationSchemes = "BasicAuthentication")]
     [ApiController]
     public class TokenController : ControllerBase
     {

@@ -108,7 +108,7 @@ namespace Microsoft.SCIM
             }
         }
 
-        public abstract Task<Resource> CreateAsync(Resource resource, string correlationIdentifier);
+        public abstract Task<Resource> CreateAsync(Resource resource, string tenant, string correlationIdentifier);
 
         public virtual async Task<Resource> CreateAsync(IRequest<Resource> request)
         {
@@ -127,7 +127,9 @@ namespace Microsoft.SCIM
                 throw new ArgumentException(SystemForCrossDomainIdentityManagementServiceResources.ExceptionInvalidRequest);
             }
 
-            Resource result = await this.CreateAsync(request.Payload, request.CorrelationIdentifier).ConfigureAwait(false);
+            string tenant = GetTenant(request.Request);
+
+            Resource result = await this.CreateAsync(request.Payload, tenant, request.CorrelationIdentifier).ConfigureAwait(false);
             return result;
         }
 
@@ -317,10 +319,7 @@ namespace Microsoft.SCIM
             return result;
         }
 
-        public virtual Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string tenant, string correlationIdentifier);
 
         public virtual async Task<(Resource[], int)> QueryAsync(IRequest<IQueryParameters> request)
         {
@@ -339,14 +338,13 @@ namespace Microsoft.SCIM
                 throw new ArgumentException(SystemForCrossDomainIdentityManagementServiceResources.ExceptionInvalidRequest);
             }
 
-            (Resource[], int) result = await this.QueryAsync(request.Payload, request.CorrelationIdentifier).ConfigureAwait(false);
+            string tenant = GetTenant(request.Request);
+
+            (Resource[], int) result = await this.QueryAsync(request.Payload, tenant, request.CorrelationIdentifier).ConfigureAwait(false);
             return result;
         }
 
-        public virtual Task<Resource> ReplaceAsync(Resource resource, string correlationIdentifier)
-        {
-            throw new NotSupportedException();
-        }
+        public abstract Task<Resource> ReplaceAsync(Resource resource, string correlationIdentifier);
 
         public virtual async Task<Resource> ReplaceAsync(IRequest<Resource> request)
         {
@@ -369,7 +367,7 @@ namespace Microsoft.SCIM
             return result;
         }
 
-        public abstract Task<Resource> RetrieveAsync(IResourceRetrievalParameters parameters, string correlationIdentifier);
+        public abstract Task<Resource> RetrieveAsync(IResourceRetrievalParameters parameters, string tenant, string correlationIdentifier);
 
         public virtual async Task<Resource> RetrieveAsync(IRequest<IResourceRetrievalParameters> request)
         {
@@ -388,7 +386,9 @@ namespace Microsoft.SCIM
                 throw new ArgumentException(SystemForCrossDomainIdentityManagementServiceResources.ExceptionInvalidRequest);
             }
 
-            Resource result = await this.RetrieveAsync(request.Payload, request.CorrelationIdentifier).ConfigureAwait(false);
+            string tenant = GetTenant(request.Request);
+
+            Resource result = await this.RetrieveAsync(request.Payload, tenant , request.CorrelationIdentifier).ConfigureAwait(false);
             return result;
         }
 
@@ -413,5 +413,7 @@ namespace Microsoft.SCIM
 
             await this.UpdateAsync(request.Payload, request.CorrelationIdentifier).ConfigureAwait(false);
         }
+
+        public abstract string GetTenant(HttpRequestMessage request);
     }
 }

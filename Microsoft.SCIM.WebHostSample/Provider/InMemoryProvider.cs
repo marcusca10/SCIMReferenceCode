@@ -1,10 +1,12 @@
-// Copyright (c) Microsoft Corporation.// Licensed under the MIT license.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
 
 namespace Microsoft.SCIM.WebHostSample.Provider
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.SCIM;
     using Microsoft.SCIM.WebHostSample.Resources;
@@ -43,16 +45,16 @@ namespace Microsoft.SCIM.WebHostSample.Provider
        
         public override IReadOnlyCollection<TypeScheme> Schema => InMemoryProvider.TypeSchema.Value;
         
-        public override Task<Resource> CreateAsync(Resource resource, string correlationIdentifier)
+        public override Task<Resource> CreateAsync(Resource resource, string tenant, string correlationIdentifier)
         {
             if (resource is Core2EnterpriseUser)
             {
-                return this.userProvider.CreateAsync(resource, correlationIdentifier);
+                return this.userProvider.CreateAsync(resource, tenant, correlationIdentifier);
             }
 
             if (resource is Core2Group)
             {
-                return this.groupProvider.CreateAsync(resource, correlationIdentifier);
+                return this.groupProvider.CreateAsync(resource, tenant, correlationIdentifier);
             }
 
             throw new NotImplementedException();
@@ -73,16 +75,16 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             throw new  NotImplementedException();
         }
 
-        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string correlationIdentifier)
+        public override Task<(Resource[], int)> QueryAsync(IQueryParameters parameters, string tenant, string correlationIdentifier)
         {
             if (parameters.SchemaIdentifier.Equals(SchemaIdentifiers.Core2EnterpriseUser))
             {
-                return this.userProvider.QueryAsync(parameters, correlationIdentifier);
+                return this.userProvider.QueryAsync(parameters, tenant, correlationIdentifier);
             }
 
             if (parameters.SchemaIdentifier.Equals(SchemaIdentifiers.Core2Group))
             {
-                return this.groupProvider.QueryAsync(parameters, correlationIdentifier);
+                return this.groupProvider.QueryAsync(parameters, tenant, correlationIdentifier);
             }
 
             throw new NotImplementedException();
@@ -103,16 +105,16 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             throw new NotImplementedException();
         }
 
-        public override Task<Resource> RetrieveAsync(IResourceRetrievalParameters parameters, string correlationIdentifier)
+        public override Task<Resource> RetrieveAsync(IResourceRetrievalParameters parameters, string tenant, string correlationIdentifier)
         {
             if (parameters.SchemaIdentifier.Equals(SchemaIdentifiers.Core2EnterpriseUser))
             {
-                return this.userProvider.RetrieveAsync(parameters, correlationIdentifier);
+                return this.userProvider.RetrieveAsync(parameters, tenant, correlationIdentifier);
             }
 
             if (parameters.SchemaIdentifier.Equals(SchemaIdentifiers.Core2Group))
             {
-                return this.groupProvider.RetrieveAsync(parameters, correlationIdentifier);
+                return this.groupProvider.RetrieveAsync(parameters, tenant, correlationIdentifier);
             }
 
             throw new NotImplementedException();
@@ -146,6 +148,12 @@ namespace Microsoft.SCIM.WebHostSample.Provider
             }
 
             throw new NotImplementedException();
+        }
+
+        public override string GetTenant(HttpRequestMessage request)
+        {
+            // Build tenant recognition logic here
+            return string.Empty;
         }
     }
 }
