@@ -35,16 +35,25 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
             [FromQuery(Name = "customPageSize")] int customPageSize = 0)
 
         {
-            _logger.LogWarning($"Received SF request: {Request.Method}\n\t{Request.Path}{Request.QueryString}");
+            _logger.LogWarning($"[{DateTime.UtcNow}] Received SF request: {Request.Method} {Request.Path}");
             _logger.LogWarning($"SF request headers: {string.Concat(Request.Headers.Select(i => $"\n\t{i.Key} : {i.Value}"))}");
+            _logger.LogWarning($"SF request query: {Request.QueryString}");
 
             // https://userapps.support.sap.com/sap/support/knowledge/en/2359742
             if (identifier.Equals("$count", StringComparison.OrdinalIgnoreCase))
             {
+                _logger.LogInformation($"Processing SF count request");
+
                 IEnumerable<Core2EnterpriseUser> scimUsers = await GetScimUsers(filter, customPageSize);
 
                 if (scimUsers != null)
+                {
+                    // Handle SF Headers
+                    this.processSfHeaders();
+
+                    _logger.LogWarning($"SF response headers: {string.Concat(Response.Headers.Select(i => $"\n\t{i.Key} : {i.Value}"))}");
                     return Ok(scimUsers.Count().ToString());
+                }
 
                 return BadRequest();
             }
@@ -59,9 +68,12 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
             [FromQuery(Name = "$expand")] string expand = null,
             [FromQuery(Name = "customPageSize")] int customPageSize = 0)
         {
-            _logger.LogWarning($"Received SF request: {Request.Method}\n\t{Request.Path}{Request.QueryString}");
+            _logger.LogWarning($"[{DateTime.UtcNow}] Received SF request: {Request.Method} {Request.Path}");
             _logger.LogWarning($"SF request headers: {string.Concat(Request.Headers.Select(i => $"\n\t{i.Key} : {i.Value}"))}");
-            //_logger.LogWarning($"Authorization header: {Request.Headers["Authorization"]}");
+            _logger.LogWarning($"SF request query: {Request.QueryString}");
+            if (customPageSize == 1)
+                _logger.LogInformation($"Processing SF connection test");
+
 
             // Get company name: @<companyID>
             var company = User.Identity.Name.Split(new[] { '@' }, 2)[1];
@@ -190,16 +202,7 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
                 }
 
                 // Handle SF Headers
-                var xCsrfToken = Request.Headers["X-CSRF-Token"];
-                var sessionCookie = Request.Cookies["SAP_SESSION_MSFT"];
-                if (sessionCookie != null)
-                    Response.Cookies.Append("SAP_SESSION_MSFT", sessionCookie);
-                else
-                    Response.Cookies.Append("SAP_SESSION_MSFT", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
-                if (xCsrfToken.Count() > 1)
-                    Response.Headers.Add("X-CSRF-Token", xCsrfToken);
-                else
-                    Response.Headers.Add("X-CSRF-Token", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+                this.processSfHeaders();
 
                 _logger.LogWarning($"SF response headers: {string.Concat(Response.Headers.Select(i => $"\n\t{i.Key} : {i.Value}"))}");
                 return Ok(odataResponse);
@@ -209,6 +212,21 @@ namespace Microsoft.SCIM.WebHostSample.Controllers
                 _logger.LogError(ex.Message);
                 return BadRequest(); 
             }
+        }
+
+        void processSfHeaders()
+        {
+            var xCsrfToken = Request.Headers["X-CSRF-Token"];
+            var sessionCookie = Request.Cookies["SAP_SESSION_MSFT"];
+            if (sessionCookie != null)
+                Response.Cookies.Append("SAP_SESSION_MSFT", sessionCookie);
+            else
+                Response.Cookies.Append("SAP_SESSION_MSFT", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+            if (xCsrfToken.Count() > 1)
+                Response.Headers.Add("X-CSRF-Token", xCsrfToken);
+            else
+                Response.Headers.Add("X-CSRF-Token", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+
         }
 
         async Task<IEnumerable<Core2EnterpriseUser>> GetScimUsers(string filter, int customPageSize)
